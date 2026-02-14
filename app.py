@@ -21,8 +21,8 @@ if 'game' not in st.session_state:
 
 if 'selected_unit' not in st.session_state:
     st.session_state.selected_unit = None
-if 'order_type' not in st.session_state:
-    st.session_state.order_type = "MOVE"  # MOVE, SUPPORT, CONVOY, HOLD
+if 'selected_power' not in st.session_state:
+    st.session_state.selected_power = None
 if 'last_detected_province' not in st.session_state:
     st.session_state.last_detected_province = None
 if 'map_version' not in st.session_state:
@@ -105,6 +105,65 @@ def parse_unit_string(unit_str):
     if len(parts) >= 2:
         return parts[0], parts[1]  # type, location
     return None, None
+
+def get_valid_destinations(unit_str, game):
+    """Get all valid destinations for a unit."""
+    try:
+        unit_type, location = parse_unit_string(unit_str)
+        if not location:
+            return []
+        
+        # Get the map object from the game
+        map_obj = game.map
+        
+        # Get adjacent provinces
+        location_obj = map_obj.locs.get(location)
+        if not location_obj:
+            return []
+        
+        # Get all adjacent provinces
+        adjacent = list(location_obj.abut)
+        
+        # Filter by unit type
+        if unit_type == 'A':
+            # Armies can only move to land provinces
+            valid = [loc for loc in adjacent if not map_obj.locs.get(loc).is_sea()]
+        else:  # Fleet
+            # Fleets can move to coastal or sea provinces
+            valid = [loc for loc in adjacent if map_obj.locs.get(loc).is_sea() or map_obj.locs.get(loc).is_coast()]
+        
+        return sorted(valid)
+    except:
+        return []
+
+def get_supportable_units(unit_str, game, power_name):
+    """Get all units that can be supported by this unit."""
+    try:
+        unit_type, location = parse_unit_string(unit_str)
+        if not location:
+            return []
+        
+        map_obj = game.map
+        location_obj = map_obj.locs.get(location)
+        if not location_obj:
+            return []
+        
+        # Get adjacent provinces
+        adjacent = list(location_obj.abut)
+        
+        supportable = []
+        
+        # Check all units in adjacent provinces
+        for other_power_name in game.powers:
+            other_power = game.get_power(other_power_name)
+            for other_unit in other_power.units:
+                other_type, other_loc = parse_unit_string(other_unit)
+                if other_loc in adjacent:
+                    supportable.append(other_unit)
+        
+        return supportable
+    except:
+        return []
 
 def draw_units_on_map(base_map_path):
     """Draw all current units on the map."""
@@ -192,31 +251,120 @@ st.title("🗺️ Diplomacy: Interactive Order Manager")
 col_map, col_sidebar = st.columns([3, 1])
 
 with col_sidebar:
-    st.subheader("⚙️ Controls")
+    st.subheader("⚙️ Order Panel")
     
-    # Order Type Selection
-    order_type = st.radio(
-        "Order Type:",
-        ["MOVE", "SUPPORT", "CONVOY", "HOLD"],
-        index=["MOVE", "SUPPORT", "CONVOY", "HOLD"].index(st.session_state.order_type)
-    )
-    st.session_state.order_type = order_type
-    
-    st.divider()
-    
-    # Display Active Selection
+    # Display Active Selection and Order Options
     if st.session_state.selected_unit:
         st.success(f"**Selected:** {st.session_state.selected_unit}")
-        st.caption(f"Order type: {st.session_state.order_type}")
+        st.caption(f"Power: {st.session_state.selected_power}")
         
-        if st.button("❌ Cancel Selection"):
+        st.divider()
+        
+        # Get possible actions
+        destinations = get_valid_destinations(st.session_state.selected_unit, game)
+        supportable = get_supportable_units(st.session_state.selected_unit, game, st.session_state.selected_power)
+        
+        # Order type selection
+        order_action = st.radio(
+            "Choose action:",
+            ["Hold", "Move", "Support", "Convoy"],
+            key="order_action"
+        )
+        
+        order_to_create = None
+        
+        if order_action == "Hold":
+            st.info("Unit will hold position")
+            if st.button("✓ Confirm Hold Order", type="primary", use_container_width=True):
+                order_to_create = f"{st.session_state.selected_unit} H"
+        
+        elif order_action == "Move":
+            if destinations:
+                dest = st.selectbox(
+                    "Move to:",
+                    destinations,
+                    key="move_dest"
+                )
+                if st.button("✓ Confirm Move Order", type="primary", use_container_width=True):
+                    order_to_create = f"{st.session_state.selected_unit} - {dest}"
+            else:
+                st.warning("No valid destinations available")
+        
+        elif order_action == "Support":
+            if supportable:
+                support_unit = st.selectbox(
+                    "Support unit:",
+                    supportable,
+                    key="support_unit"
+                )
+                
+                # Get destinations for the supported unit
+                support_destinations = get_valid_destinations(support_unit, game)
+                
+                support_action = st.radio(
+                    "Support to:",
+                    ["Hold position"] + [f"Move to {d}" for d in support_destinations],
+                    key="support_action"
+                )
+                
+                if st.button("✓ Confirm Support Order", type="primary", use_container_width=True):
+                    if support_action == "Hold position":
+                        order_to_create = f"{st.session_state.selected_unit} S {support_unit}"
+                    else:
+                        # Extract destination from "Move to XXX"
+                        dest = support_action.replace("Move to ", "")
+                        order_to_create = f"{st.session_state.selected_unit} S {support_unit} - {dest}"
+            else:
+                st.warning("No units available to support")
+        
+        elif order_action == "Convoy":
+            st.warning("Convoy orders are complex - you may need to create them manually")
+            # Simplified convoy interface
+            unit_type, location = parse_unit_string(st.session_state.selected_unit)
+            if unit_type == 'F':
+                st.info("Select army to convoy and destination")
+                # This would need more complex logic
+            else:
+                st.error("Only fleets can convoy")
+        
+        # Execute order if created
+        if order_to_create:
+            try:
+                # Get current orders and add new one
+                current_orders = list(game.get_orders(st.session_state.selected_power))
+                
+                # Remove any existing order for this unit
+                current_orders = [o for o in current_orders if not o.startswith(st.session_state.selected_unit)]
+                
+                # Add new order
+                current_orders.append(order_to_create)
+                
+                # Set all orders for this power
+                game.set_orders(st.session_state.selected_power, current_orders)
+                
+                st.session_state.map_version += 1
+                st.toast(f"✓ Order created: {order_to_create}")
+                st.session_state.selected_unit = None
+                st.session_state.selected_power = None
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Invalid order: {e}")
+                st.session_state.selected_unit = None
+                st.session_state.selected_power = None
+        
+        st.divider()
+        
+        if st.button("❌ Cancel Selection", use_container_width=True):
             st.session_state.selected_unit = None
+            st.session_state.selected_power = None
             st.rerun()
+    
     else:
-        st.info("Click a unit to select it")
+        st.info("👆 Click a unit on the map to select it")
     
     if st.session_state.last_detected_province:
-        st.metric("Last Detected", st.session_state.last_detected_province)
+        st.caption(f"Hovering: {st.session_state.last_detected_province}")
     
     st.divider()
     
@@ -228,10 +376,18 @@ with col_sidebar:
         orders = game.get_orders(power_name)
         if orders:
             orders_exist = True
-            color = POWER_COLORS.get(power_name, '#808080')
-            st.markdown(f"**{power_name}**")
-            for order in orders:
-                st.text(f"  • {order}")
+            with st.expander(f"**{power_name}**", expanded=False):
+                for order in orders:
+                    col_order, col_delete = st.columns([4, 1])
+                    with col_order:
+                        st.text(f"{order}")
+                    with col_delete:
+                        if st.button("🗑️", key=f"del_{power_name}_{order}"):
+                            current_orders = list(game.get_orders(power_name))
+                            current_orders.remove(order)
+                            game.set_orders(power_name, current_orders)
+                            st.session_state.map_version += 1
+                            st.rerun()
     
     if not orders_exist:
         st.caption("No orders yet")
@@ -244,7 +400,8 @@ with col_sidebar:
             try:
                 game.process()
                 st.session_state.selected_unit = None
-                st.session_state.map_version += 1  # Force map refresh
+                st.session_state.selected_power = None
+                st.session_state.map_version += 1
                 st.success("Turn processed!")
                 st.rerun()
             except Exception as e:
@@ -254,6 +411,7 @@ with col_sidebar:
         if st.button("🔄 Reset", use_container_width=True):
             st.session_state.game = Game()
             st.session_state.selected_unit = None
+            st.session_state.selected_power = None
             st.session_state.last_detected_province = None
             st.session_state.map_version = 0
             st.rerun()
@@ -261,7 +419,6 @@ with col_sidebar:
     # Game Info
     st.divider()
     st.caption(f"**Phase:** {game.phase}")
-    st.caption(f"**Year:** {game.get_current_phase().split()[1] if len(game.get_current_phase().split()) > 1 else 'N/A'}")
 
 with col_map:
     st.write(f"**Current Phase:** {game.phase}")
@@ -310,77 +467,19 @@ with col_map:
                     if clicked_unit:
                         break
                 
-                # STATE MACHINE
-                if st.session_state.selected_unit is None:
-                    # SELECT UNIT
-                    if clicked_unit:
-                        st.session_state.selected_unit = clicked_unit
-                        st.toast(f"✓ Selected: {clicked_unit}")
-                        st.rerun()
-                    else:
-                        st.toast(f"No unit in {clicked_prov}")
-                
+                # SELECT UNIT
+                if clicked_unit:
+                    st.session_state.selected_unit = clicked_unit
+                    st.session_state.selected_power = clicked_power
+                    st.toast(f"✓ Selected: {clicked_unit}")
+                    st.rerun()
                 else:
-                    # CREATE ORDER
-                    selected_unit = st.session_state.selected_unit
-                    
-                    # Find which power owns the selected unit
-                    unit_power = None
-                    for power_name in game.powers:
-                        power = game.get_power(power_name)
-                        if selected_unit in power.units:
-                            unit_power = power_name
-                            break
-                    
-                    if not unit_power:
-                        st.error("Could not find power for selected unit")
+                    # Clicked on empty province - deselect if something was selected
+                    if st.session_state.selected_unit:
                         st.session_state.selected_unit = None
-                    else:
-                        order_str = None
-                        
-                        # Build order based on type
-                        if st.session_state.order_type == "MOVE":
-                            order_str = f"{selected_unit} - {clicked_prov}"
-                        
-                        elif st.session_state.order_type == "HOLD":
-                            order_str = f"{selected_unit} H"
-                        
-                        elif st.session_state.order_type == "SUPPORT":
-                            # Support requires another unit - check if one exists at clicked location
-                            if clicked_unit:
-                                # Support format: "A PAR S A MAR - BUR"
-                                # We'll make it simple: support the unit to hold
-                                order_str = f"{selected_unit} S {clicked_unit}"
-                            else:
-                                st.warning("Support requires a unit at target location")
-                        
-                        elif st.session_state.order_type == "CONVOY":
-                            # Convoy is complex - simplified version
-                            order_str = f"{selected_unit} C A ??? - {clicked_prov}"
-                            st.warning("Convoy orders need manual editing - this is a placeholder")
-                        
-                        if order_str:
-                            try:
-                                # Get current orders and add new one
-                                current_orders = list(game.get_orders(unit_power))
-                                
-                                # Remove any existing order for this unit
-                                current_orders = [o for o in current_orders if not o.startswith(selected_unit)]
-                                
-                                # Add new order
-                                current_orders.append(order_str)
-                                
-                                # Set all orders for this power
-                                game.set_orders(unit_power, current_orders)
-                                
-                                st.session_state.map_version += 1  # Force map refresh
-                                st.toast(f"✓ Order: {order_str}")
-                                st.session_state.selected_unit = None
-                                st.rerun()
-                                
-                            except Exception as e:
-                                st.error(f"Invalid order: {e}")
-                                st.session_state.selected_unit = None
+                        st.session_state.selected_power = None
+                        st.toast(f"Deselected")
+                        st.rerun()
     
     except FileNotFoundError:
         st.error("⚠️ map.png not found! Please add the map image to the same directory as this script.")
@@ -396,7 +495,3 @@ with st.expander("🔧 Debug Info"):
         power = game.get_power(power_name)
         if power.units:
             st.write(f"{power_name}: {list(power.units)}")
-    
-    if st.session_state.last_detected_province:
-        st.write(f"**Last Detected:** {st.session_state.last_detected_province}")
-        st.write(f"**Province Center:** {PROVINCE_CENTERS.get(st.session_state.last_detected_province)}")

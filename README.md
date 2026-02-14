@@ -1,44 +1,41 @@
 # Diplomacy Interactive Order Manager
 
-A point-and-click interface for managing Diplomacy game orders in person.
+A simplified point-and-click interface for managing Diplomacy game orders in person.
 
 ## get going
-
 1. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
 2. **Place your map:**
-   - Make sure `map.png` is in the same directory as `app.py`
+   - Make sure `map.png` is in the same directory as `diplomacy_app_simple.py`
 
 3. **Run the app:**
    ```bash
-   streamlit run diplomacy_app_fixed.py
+   streamlit run diplomacy_app_simple.py
    ```
 
-## 🎮 How to Use
 
-### Giving Orders
+### Simple Workflow
 
-1. **Select a unit:** Click on any colored circle on the map
-   - A gold ring will appear around the selected unit
-   - Unit info shows in the sidebar
+1. **Click a unit** on the map (the colored circles)
+   - A gold ring appears around the selected unit
+   - The Order Panel opens in the sidebar
 
-2. **Choose order type:** Use the radio buttons in the sidebar:
-   - **MOVE** - Move unit to a destination
-   - **SUPPORT** - Support another unit (click the unit to support)
-   - **CONVOY** - Convoy orders
-   - **HOLD** - Unit holds its position
+2. **Choose what to do** using the dropdown menus:
+   - **Hold** - Unit stays in place (just click confirm)
+   - **Move** - Select destination from dropdown of valid provinces
+   - **Support** - Select which unit to support and what action to support
+   - **Convoy** - Simplified convoy interface (for fleets)
 
-3. **Click destination:** 
-   - For MOVE: Click the province you want to move to
-   - For SUPPORT: Click the unit you want to support
-   - For HOLD: The order is created immediately
+3. **Confirm the order** - Click the confirm button
 
-4. **View orders:** All current orders appear in the sidebar organized by power
+4. **Repeat** for all units
 
-5. **Process turn:** Click the "Process" button when ready to resolve orders
+5. **Process the turn** - Click "▶️ Process" when ready
+
+That's it! No more double-clicking or selecting modes first.
 
 ### Power Colors
 
@@ -50,15 +47,30 @@ A point-and-click interface for managing Diplomacy game orders in person.
 - ⚪ **Russia** - White
 - 🟡 **Turkey** - Yellow
 
+### Features
+
+- ✅ **Smart dropdowns** - Only shows valid options for each unit
+- ✅ **Visual feedback** - Selected units highlighted with gold ring
+- ✅ **Order management** - Delete orders with trash button
+- ✅ **Auto-validation** - Can't create invalid orders
+- ✅ **Province detection** - Shows which province you're hovering
+
 ### Controls
 
-- **Cancel Selection** - Deselect the currently selected unit
+- **Click unit** - Select/deselect
+- **Click empty space** - Deselect current unit
+- **Cancel Selection** - Deselect button in sidebar
+- **🗑️** - Delete individual orders
 - **Process** - Adjudicate the current turn
 - **Reset** - Start a new game from Spring 1901
 
 
-## 📝 Files
+### Dropdown shows no options?
+- This means the unit has no valid moves from its current position
+- Try a different unit or use "Hold"
 
-- `diplomacy_app_fixed.py` - Main application
-- `map.png` - The Diplomacy game map
-- `requirements.txt` - Python dependencies
+### Orders not working?
+- Make sure you click "Confirm" after selecting from dropdowns
+- Check that you selected a valid option
+- Fleets can only move to coastal/sea provinces
+- Armies can only move to land provinces
