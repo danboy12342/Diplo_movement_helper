@@ -3,7 +3,6 @@ from diplomacy import Game
 from streamlit_image_coordinates import streamlit_image_coordinates
 from scipy.spatial import distance
 from PIL import Image, ImageDraw, ImageFont
-import io
 
 # --- 1. SETUP & CONFIG ---
 st.set_page_config(layout="wide", page_title="Diplomacy Order Manager")
@@ -26,6 +25,8 @@ if 'order_type' not in st.session_state:
     st.session_state.order_type = "MOVE"  # MOVE, SUPPORT, CONVOY, HOLD
 if 'last_detected_province' not in st.session_state:
     st.session_state.last_detected_province = None
+if 'map_version' not in st.session_state:
+    st.session_state.map_version = 0
 
 game = st.session_state.game
 
@@ -243,6 +244,7 @@ with col_sidebar:
             try:
                 game.process()
                 st.session_state.selected_unit = None
+                st.session_state.map_version += 1  # Force map refresh
                 st.success("Turn processed!")
                 st.rerun()
             except Exception as e:
@@ -253,6 +255,7 @@ with col_sidebar:
             st.session_state.game = Game()
             st.session_state.selected_unit = None
             st.session_state.last_detected_province = None
+            st.session_state.map_version = 0
             st.rerun()
     
     # Game Info
@@ -267,21 +270,20 @@ with col_map:
     try:
         map_with_units = draw_units_on_map("map.png")
         
-        # Convert PIL image to bytes for streamlit
-        buf = io.BytesIO()
-        map_with_units.save(buf, format='PNG')
-        byte_im = buf.getvalue()
+        # Save to temporary file with version to force refresh
+        temp_map_path = f"temp_map_v{st.session_state.map_version}.png"
+        map_with_units.save(temp_map_path)
         
         # Display the map and capture clicks
         coords = streamlit_image_coordinates(
-            byte_im,
+            temp_map_path,
             key="map_interactive",
             width=800
         )
         
         # --- CLICK LOGIC ---
         if coords:
-            # Get the image dimensions to scale coordinates
+            # Scale coordinates from display size to original size
             img_width = map_with_units.width
             display_width = 800
             scale = img_width / display_width
@@ -371,6 +373,7 @@ with col_map:
                                 # Set all orders for this power
                                 game.set_orders(unit_power, current_orders)
                                 
+                                st.session_state.map_version += 1  # Force map refresh
                                 st.toast(f"✓ Order: {order_str}")
                                 st.session_state.selected_unit = None
                                 st.rerun()

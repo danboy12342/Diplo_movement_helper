@@ -2,3 +2,4 @@ streamlit
 diplomacy
 streamlit-image-coordinates
 scipy
+Pillow
