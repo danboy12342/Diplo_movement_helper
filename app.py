@@ -17,16 +17,53 @@ if 'orders_log' not in st.session_state:
 
 game = st.session_state.game
 
-# --- 2. MAP COORDINATES (The "Hard" Part) ---
-# You need to map pixel coordinates to Province names for your specific image.
-# Open your map in Paint/Photoshop, hover over centers, and write down X,Y.
-# This is a TINY sample for demonstration. You must fill this out!
+# --- 2. MAP COORDINATES ---
+# These coordinates are mapped to the "GuyWithCoolArt" style map you provided.
+# If clicks are slightly off, you can tweak the numbers manually.
 PROVINCE_CENTERS = {
-    "LON": (340, 230), "LVP": (310, 180), "EDI": (310, 130),
-    "PAR": (360, 360), "BRE": (290, 350), "MAR": (390, 480),
-    "BUR": (410, 360), "PIC": (360, 320), "BEL": (410, 310),
-    "ENG": (280, 280), "MAO": (150, 400), "SPA": (250, 500)
-    # ... You need to add the rest of the 75 provinces ...
+    # ENGLAND
+    "LON": (220, 305), "LVP": (200, 160), "EDI": (225, 110),
+    "CLY": (190, 80),  "YOR": (230, 200), "WAL": (180, 280),
+
+    # FRANCE
+    "PAR": (240, 480), "BRE": (170, 450), "MAR": (260, 600),
+    "PIC": (250, 420), "BUR": (290, 480), "GAS": (210, 560),
+
+    # GERMANY
+    "BER": (520, 390), "MUN": (460, 500), "KIE": (480, 340),
+    "RUH": (400, 430), "PRU": (580, 350), "SIL": (550, 440),
+
+    # ITALY
+    "ROM": (430, 780), "VEN": (430, 680), "NAP": (470, 850),
+    "PIE": (350, 640), "TUS": (400, 730), "APU": (500, 780),
+
+    # AUSTRIA
+    "VIE": (560, 590), "BUD": (630, 640), "TRI": (530, 690),
+    "GAL": (680, 520), "TYR": (500, 580), "BOH": (520, 530),
+
+    # TURKEY
+    "CON": (850, 820), "ANK": (950, 800), "SMY": (930, 900),
+    "SYR": (1050, 880), "ARM": (1100, 750),
+
+    # RUSSIA
+    "MOS": (900, 400), "SEV": (950, 600), "WAR": (680, 430),
+    "STP": (850, 250), "UKR": (800, 530), "LVN": (700, 350),
+    "FIN": (750, 200),
+
+    # NEUTRALS
+    "NOR": (500, 180), "SWE": (580, 220), "DEN": (470, 300),
+    "HOL": (360, 350), "BEL": (320, 390), "SPA": (160, 680),
+    "POR": (90, 650),  "TUN": (350, 950), "GRE": (670, 840),
+    "SER": (640, 740), "BUL": (730, 760), "RUM": (750, 650),
+
+    # SEAS (Water)
+    "NTH": (350, 250), "ENG": (200, 350), "IRI": (120, 250),
+    "NAO": (50, 150),  "NWG": (500, 50),  "BAR": (900, 50),
+    "BAL": (600, 300), "BOT": (650, 200), "SKA": (550, 250),
+    "HEL": (420, 300), "BLA": (900, 700), "AEG": (750, 920),
+    "EAS": (900, 1000), "ION": (600, 950), "ADR": (520, 800),
+    "TYS": (400, 850), "LYO": (300, 750), "WES": (250, 850),
+    "MAO": (50, 550),  "NAF": (200, 950)
 }
 
 def get_closest_province(x, y):
