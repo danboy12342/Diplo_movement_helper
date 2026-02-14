@@ -124,7 +124,7 @@ def draw_units_on_map(base_map_path="map.png"):
     return combined.convert('RGB')
 
 # --- UI LAYOUT ---
-st.title("🗺️ Diplomacy: Manual Order Entry")
+st.title("2023 Diplomacy Double D's: Manual Order Entry")
 
 col_map, col_orders = st.columns([3, 2])
 
@@ -195,12 +195,12 @@ A ROM H""", language=None)
     st.divider()
     
     # Process controls
-    st.subheader("⚙️ Game Controls")
+    st.subheader("Game Controls")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("▶️ Process Turn", type="primary", use_container_width=True):
+        if st.button("▶Process", type="primary", use_container_width=True):
             try:
                 # Show what happened
                 with st.spinner("Processing turn..."):
@@ -213,7 +213,7 @@ A ROM H""", language=None)
                 st.error(f"Error processing: {e}")
     
     with col2:
-        if st.button("🔄 Reset Game", use_container_width=True):
+        if st.button("Reset", use_container_width=True):
             st.session_state.game = Game()
             st.session_state.order_inputs = {p: "" for p in power_names}
             for power in power_names:
@@ -222,7 +222,7 @@ A ROM H""", language=None)
     
     # Show all submitted orders
     st.divider()
-    st.subheader("📋 Submitted Orders")
+    st.subheader("Submitted Orders")
     
     all_orders = {}
     for power in power_names:
