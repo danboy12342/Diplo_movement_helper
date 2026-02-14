@@ -1,76 +1,69 @@
-# Diplomacy Interactive Order Manager
+# Diplomacy: Manual Order Entry
 
-A simplified point-and-click interface for managing Diplomacy game orders in person.
+The simplest way to track Diplomacy games in person. Just type orders and watch the board update.
 
-## get going
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## 🚀 Setup
 
-2. **Place your map:**
-   - Make sure `map.png` is in the same directory as `diplomacy_app_simple.py`
+```bash
+pip install -r requirements.txt
+streamlit run diplomacy_manual.py
+```
 
-3. **Run the app:**
-   ```bash
-   streamlit run diplomacy_app_simple.py
-   ```
+Make sure `map.png` is in the same directory.
 
+## 🎮 How to Use
 
 ### Simple Workflow
 
-1. **Click a unit** on the map (the colored circles)
-   - A gold ring appears around the selected unit
-   - The Order Panel opens in the sidebar
+1. **View the board** - See all units on the map
+2. **Type orders** - Use the tabs for each power, type orders in plain text
+3. **Submit orders** - Click "Submit Orders" for each power
+4. **Process turn** - Click "Process Turn" to see units move
 
-2. **Choose what to do** using the dropdown menus:
-   - **Hold** - Unit stays in place (just click confirm)
-   - **Move** - Select destination from dropdown of valid provinces
-   - **Support** - Select which unit to support and what action to support
-   - **Convoy** - Simplified convoy interface (for fleets)
+That's it!
 
-3. **Confirm the order** - Click the confirm button
+### Order Format Examples
 
-4. **Repeat** for all units
+```
+A PAR - BUR          (Move army from Paris to Burgundy)
+F LON - NTH          (Move fleet from London to North Sea)
+A MUN S A BER - SIL  (Army in Munich supports Berlin to Silesia)
+F BRE S F MAO - ENG  (Fleet in Brest supports Mid-Atlantic to English Channel)
+A ROM H              (Army in Rome holds)
+```
 
-5. **Process the turn** - Click "▶️ Process" when ready
+### Power Colors on Map
 
-That's it! No more double-clicking or selecting modes first.
+- 🔴 Austria (Red)
+- 🔵 England (Blue)
+- 🟦 France (Light Blue)
+- ⚫ Germany (Black)
+- 🟢 Italy (Green)
+- ⚪ Russia (White)
+- 🟡 Turkey (Yellow)
 
-### Power Colors
+## ✨ Features
 
-- 🔴 **Austria** - Red
-- 🔵 **England** - Blue
-- 🟦 **France** - Light Blue
-- ⚫ **Germany** - Black
-- 🟢 **Italy** - Green
-- ⚪ **Russia** - White
-- 🟡 **Turkey** - Yellow
+- ✅ **Visual board state** - See all units on the map
+- ✅ **Manual order entry** - Type orders the traditional way
+- ✅ **Auto-update** - Map refreshes after processing
+- ✅ **Unit reference** - Each tab shows current units for that power
+- ✅ **Order review** - See all submitted orders before processing
+- ✅ **Clean interface** - No complex dropdowns or clicking
 
-### Features
+## 💡 Tips
 
-- ✅ **Smart dropdowns** - Only shows valid options for each unit
-- ✅ **Visual feedback** - Selected units highlighted with gold ring
-- ✅ **Order management** - Delete orders with trash button
-- ✅ **Auto-validation** - Can't create invalid orders
-- ✅ **Province detection** - Shows which province you're hovering
+- You can edit orders before submitting - just change the text and click Submit again
+- Use the "Current Units" section in each tab to see what you have
+- Orders persist until you process the turn or clear them
+- The game validates orders when processing - invalid orders are ignored
 
-### Controls
+## 🎯 Why This Approach?
 
-- **Click unit** - Select/deselect
-- **Click empty space** - Deselect current unit
-- **Cancel Selection** - Deselect button in sidebar
-- **🗑️** - Delete individual orders
-- **Process** - Adjudicate the current turn
-- **Reset** - Start a new game from Spring 1901
+Manual order entry is actually **faster** for experienced players:
+- Type orders naturally like you would on paper
+- No clicking around the map
+- Easy to copy/paste orders
+- Familiar format for Diplomacy veterans
 
-
-### Dropdown shows no options?
-- This means the unit has no valid moves from its current position
-- Try a different unit or use "Hold"
-
-### Orders not working?
-- Make sure you click "Confirm" after selecting from dropdowns
-- Check that you selected a valid option
-- Fleets can only move to coastal/sea provinces
-- Armies can only move to land provinces
+Perfect for in-person games where everyone calls out their orders! 🎲
