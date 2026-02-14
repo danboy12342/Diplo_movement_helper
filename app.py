@@ -14,6 +14,10 @@ if 'selected_unit' not in st.session_state:
     st.session_state.selected_unit = None # Stores the unit currently being moved
 if 'orders_log' not in st.session_state:
     st.session_state.orders_log = {} # Stores pending orders
+if 'last_detected_province' not in st.session_state:
+    st.session_state.last_detected_province = None
+if 'last_coords' not in st.session_state:
+    st.session_state.last_coords = None
 
 game = st.session_state.game
 
@@ -92,7 +96,15 @@ with col_map:
     if not os.path.exists(map_path):
         st.error("Please add a 'map.png' file to your directory to use Point-and-Click.")
     else:
-        st.write(f"**Phase:** {game.phase}")
+        # Show phase and detected province prominently
+        col_phase, col_detected = st.columns(2)
+        with col_phase:
+            st.write(f"**Phase:** {game.phase}")
+        with col_detected:
+            if st.session_state.last_detected_province:
+                # Get the province center for visual feedback
+                prov_center = PROVINCE_CENTERS.get(st.session_state.last_detected_province, (0, 0))
+                st.write(f"**Detected:** :blue-background[{st.session_state.last_detected_province}] @ ({prov_center[0]}, {prov_center[1]})")
         
         # This component renders the image and returns click coordinates
         # key="map" ensures it doesn't reload unnecessarily
@@ -102,6 +114,10 @@ with col_map:
         if coords:
             x, y = coords['x'], coords['y']
             clicked_prov = get_closest_province(x, y)
+            
+            # Store the detected province for display
+            st.session_state.last_detected_province = clicked_prov
+            st.session_state.last_coords = (x, y)
             
             if clicked_prov:
                 # Logic: State Machine
@@ -150,6 +166,18 @@ with col_sidebar:
         if st.button("Cancel Selection"):
             st.session_state.selected_unit = None
             st.rerun()
+    
+    # Show detection status box
+    if st.session_state.last_detected_province:
+        with st.container(border=True):
+            st.write("**Last Detection:**")
+            st.metric(label="Province", value=st.session_state.last_detected_province)
+            if st.session_state.last_coords:
+                st.caption(f"Click coords: ({st.session_state.last_coords[0]}, {st.session_state.last_coords[1]})")
+                actual_center = PROVINCE_CENTERS.get(st.session_state.last_detected_province, (0, 0))
+                st.caption(f"Province center: ({actual_center[0]}, {actual_center[1]})")
+
+    st.divider()
 
     # Display Orders grouped by Power
     for power in game.powers:
@@ -168,9 +196,19 @@ with col_sidebar:
         
     if st.button("Reset Game"):
         st.session_state.game = diplomacy.Game()
+        st.session_state.last_detected_province = None
+        st.session_state.last_coords = None
         st.rerun()
 
 # --- 4. DEBUG INFO (Optional) ---
 # Helps you build your coordinate list!
-if coords:
-    st.caption(f"Last Click: x={coords['x']}, y={coords['y']} -> {get_closest_province(coords['x'], coords['y'])}")
+with st.expander("🔧 Debug Info", expanded=False):
+    if st.session_state.last_coords and st.session_state.last_detected_province:
+        st.write(f"**Last Click:** x={st.session_state.last_coords[0]}, y={st.session_state.last_coords[1]}")
+        st.write(f"**Detected Province:** {st.session_state.last_detected_province}")
+        st.write(f"**Province Center:** {PROVINCE_CENTERS.get(st.session_state.last_detected_province)}")
+        
+        # Show distance calculation
+        actual_center = PROVINCE_CENTERS.get(st.session_state.last_detected_province, (0, 0))
+        dist = distance.euclidean(st.session_state.last_coords, actual_center)
+        st.write(f"**Distance from center:** {dist:.1f} pixels")
